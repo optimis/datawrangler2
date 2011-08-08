@@ -1,33 +1,35 @@
-class UserObservable < ReportingObserver
+class UserObserver < ReportingObserver
 
-  watch :permissions, :on => :create_and_destroy do |record| 
-    push_updated_records_to_store_by_ids( record["user_id"] )
+  watch :permissions, :on => :create_and_destroy do |message| 
+    message.observer_action = 'UPDATE'
+    message.observer_select_statement = User.joins(:permissions).where(:permissions => {:id => message.query['id']}).to_sql
   end
 
-  watch :permissions do |record, changes| 
-    if ( changes.keys.include?("role_id") || changes.keys.include?("location_id") || changes.keys.include?("location_type") )
-      push_updated_records_to_store_by_ids( record["user_id"] )
+  watch :permissions do |message| 
+    if message.updated_any_of_these?(["role_id", "location_id","location_type"])
+      message.observer_action = 'UPDATE'
+      message.observer_select_statement = User.joins(:permissions).where(:permissions => {:id => message.query['id']}).to_sql
     end
   end
   
-  watch :roles do |record, changes|
-    if changes.keys.include?("name")      
-      user_ids = Permission.all( :select => :user_id, :conditions => { :role_id => record["id"] } ).map{ |p| p.user_id }
-      push_updated_records_to_store_by_ids( user_ids )
+  watch :roles do |message|
+    if message.data.keys.include?("name")      
+      message.observer_action=('UPDATE')
+      message.observer_select_statement=(User.joins(:permissions => :role).where(:role => { :permissions =>  {:id => message.query['id']} }).to_sql)
     end
   end
   
-  watch :clinics do |record, changes|
-    if changes.keys.include?("name")      
-      user_ids = Permission.all( :select => :user_id, :conditions => { :location_type => "Clinic", :location_id => record["id"] } ).map{ |p| p.user_id }
-      push_updated_records_to_store_by_ids( user_ids )
+  watch :clinics do |message|
+    if message.updated_any_of_these? "name"      
+      message.observer_action=('UPDATE')
+      message.observer_select_statement = User.joins(:permissions).where(:permissions => {:location_id => message.query['id'], :location_type => 'CLinic' }).to_sql
     end
   end
   
-  watch :practices do |record, changes|
-    if changes.keys.include?("name")      
-      user_ids = Permission.all( :select => :user_id, :conditions => { :location_type => "Practice", :location_id => record["id"] } ).map{ |p| p.user_id }
-      push_updated_records_to_store_by_ids( user_ids )
+  watch :practices do |message|
+    if message.updated_any_of_these? "name"      
+      message.observer_action=('UPDATE')
+      message.observer_select_statement = User.joins(:permissions).where(:permissions => {:location_id => message.query['id'], :location_type => 'Practice' }).to_sql
     end
   end
     

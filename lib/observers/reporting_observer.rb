@@ -3,32 +3,27 @@ class ReportingObserver
   class_inheritable_accessor :observable_model
   class_inheritable_accessor :observable_hooks
   
-  def self.receive_message(message)
-    
-     action = message['sql']['action'] == 'UPDATE' ? :update : :create_and_destroy
-     table_name = message['sql']['table'].to_sym
 
-     # 1. does this mesage we want?
-     return false unless has_observable_hooks_for?(action, table_name)     
+  def self.process_message(message_hash)
+      
+    message = Message.new message_hash
+    # 1. does this mesage we want?
+    return false unless has_observable_hooks_for?(message.action, message.table_name)     
      
-     # 2. call the block to query ids
-    callback_block = self.observable_hooks[action][table_name]
-    action == :update ? callback_block.call(message['sql']['query'], message['sql']['data']) : callback_block.call(message['sql']['query'])
+    # message['observer'] = {}
     
-    ## update
-    #return unless self.class.has_observable_hooks_for?(:update, record)
-    #enqueue_for_after_update_callback(record)
-    #
-    ## create
-    #return unless self.class.has_observable_hooks_for?(:create_and_destroy, record)
-    #enqueue_for_after_create_and_destroy_callback(record)
-    #
-    ## destroy
-    #
-    #return unless self.class.has_observable_hooks_for?(:create_and_destroy, record) 
-    #enqueue_for_after_create_and_destroy_callback(record)
+    # 2. call the block to query ids
+    callback_block = self.observable_hooks[message.action][message.table_name]
+    callback_block.call(message)
+
+    return false if message.not_observered?
     
-    return true
+    # return false unless !!sql_select
+    # message['observer']['sql'] = sql_select
+    message.observer_class = observable_model.to_s
+    
+    
+    return message.to_h
   end
   
   # Register a observer for model
@@ -68,26 +63,26 @@ class ReportingObserver
     #observe ( observable_hooks[:create_and_destroy].keys + observable_hooks[:update].keys ).uniq
   end
 
-  # Push observable_model's ids to ReportingObserverStore by conditions
-  def self.push_updated_records_to_store_by_conditions(conditions)
-    observable_model.all( :select => :id, :conditions => conditions ).each do |record|
-      ReportingObserverStore.push(:update, self.observable_model.to_s.tableize, record.id)
-    end
-  end
+  # # Push observable_model's ids to ReportingObserverStore by conditions
+  # def self.push_updated_records_to_store_by_conditions(conditions)
+  #   observable_model.all( :select => :id, :conditions => conditions ).each do |record|
+  #     ReportingObserverStore.push(:update, self.observable_model.to_s.tableize, record.id)
+  #   end
+  # end
 
-  # Push observable_model's ids to ReportingObserverStore
-  def self.push_updated_records_to_store_by_ids(*ids)
-    ids.flatten!
-    ids.compact!
-    ids.each do |id|
-      ReportingObserverStore.push(:update, self.observable_model.to_s.tableize, id)
-    end
-  end
-  
-  def self.perform(action, model_name, record_hash, changes=nil)
-    callback_block = self.observable_hooks[action.to_sym][model_name.underscore.to_sym]
-    (changes)? callback_block.call(record_hash, changes) : callback_block.call(record_hash)
-  end
+  # # Push observable_model's ids to ReportingObserverStore
+  # def self.push_updated_records_to_store_by_ids(*ids)
+  #   ids.flatten!
+  #   ids.compact!
+  #   ids.each do |id|
+  #     ReportingObserverStore.push(:update, self.observable_model.to_s.tableize, id)
+  #   end
+  # end
+  # 
+  # def self.perform(action, model_name, record_hash, changes=nil)
+  #   callback_block = self.observable_hooks[action.to_sym][model_name.underscore.to_sym]
+  #   (changes)? callback_block.call(record_hash, changes) : callback_block.call(record_hash)
+  # end
   
   protected
   

@@ -19,7 +19,8 @@ describe ReportingObserver do
 
 
 
-  describe '#receive_message' do
+  describe '#process_message' do
+    subject { UserObserver.process_message(received_message) }
     before :each do
       class UserObserver < ReportingObserver; end      
     end
@@ -31,14 +32,33 @@ describe ReportingObserver do
     end
     context "ignore message" do
       it "should return false" do
-        UserObserver.watch(:permissions, :on => :create_and_destroy) { |record, changes| }
-        UserObserver.receive_message(received_message).should be_false        
+        UserObserver.watch(:permissions, :on => :create_and_destroy) { |message| }
+        should be_false        
       end
     end
     
-    it "should return true" do
-      UserObserver.watch(:payor_types, :on => :create_and_destroy) { |record, changes| }
-      UserObserver.receive_message(received_message).should be_true
+    it "should return message" do
+      UserObserver.watch(:payor_types, :on => :create_and_destroy) { |message| message.observer_action = ''}
+      should be_instance_of Hash
+    end
+
+    it 'should add the sql statement that the presenter should search for' do
+      UserObserver.watch(:payor_types, :on => :create_and_destroy) { |message| message.observer_select_statement= 'statement'}
+      
+      subject['observer']['sql'].should == 'statement' 
+    end
+
+    it 'should add the name of the presenter to use to flatten the data' do
+      UserObserver.watch(:payor_types, :on => :create_and_destroy) { |message| message.observer_select_statement = 'statement'}
+      
+      subject['observer']['class'].should === 'User' 
+    end
+
+    it 'should return the original message' do
+      UserObserver.watch(:payor_types, :on => :create_and_destroy) { |message| message.observer_select_statement = 'statement'}
+      message = subject
+      message.delete('observer')
+      message.should == received_message
     end
         
   end
