@@ -1,4 +1,5 @@
 class UserObserver < ReportingObserver
+  observed_fields = [:first_name, :last_name, :practice_id, :state, :email]
 
   watch :permissions, :on => :create_and_destroy do |message| 
     message.observer_action = 'UPDATE'
