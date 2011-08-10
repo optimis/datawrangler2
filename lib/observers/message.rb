@@ -9,6 +9,10 @@ class Message
     @message['sql']['action'] == 'UPDATE' ? :update : :create_and_destroy
   end
 
+  def sql_action
+    @message['sql']['action']
+  end
+
   def table_name
     @message['sql']['table'].to_sym
   end

@@ -1,7 +1,7 @@
 class ReportingObserver
 
-  class_inheritable_accessor :observable_model
   class_inheritable_accessor :observable_hooks
+  class_inheritable_accessor :observed_fields
   
 
   def self.process_message(message_hash)
@@ -54,36 +54,31 @@ class ReportingObserver
   #
   
   def self.watch(model_name, options = {}, &block)
-    self.observable_model ||= const_get( self.to_s.gsub('Observer', '') ) # User
     self.observable_hooks ||= {:update => {}, :create_and_destroy => {}}
     
     options[:on] ||= :update
     self.observable_hooks[options[:on]][model_name] = block
-    
-    #observe ( observable_hooks[:create_and_destroy].keys + observable_hooks[:update].keys ).uniq
   end
 
-  # # Push observable_model's ids to ReportingObserverStore by conditions
-  # def self.push_updated_records_to_store_by_conditions(conditions)
-  #   observable_model.all( :select => :id, :conditions => conditions ).each do |record|
-  #     ReportingObserverStore.push(:update, self.observable_model.to_s.tableize, record.id)
-  #   end
-  # end
-
-  # # Push observable_model's ids to ReportingObserverStore
-  # def self.push_updated_records_to_store_by_ids(*ids)
-  #   ids.flatten!
-  #   ids.compact!
-  #   ids.each do |id|
-  #     ReportingObserverStore.push(:update, self.observable_model.to_s.tableize, id)
-  #   end
-  # end
-  # 
-  # def self.perform(action, model_name, record_hash, changes=nil)
-  #   callback_block = self.observable_hooks[action.to_sym][model_name.underscore.to_sym]
-  #   (changes)? callback_block.call(record_hash, changes) : callback_block.call(record_hash)
-  # end
+  def self.observable_model
+    const_get( self.to_s.gsub('Observer', '') ) # User 
+  end
   
+  def self.inherited(subclass)
+    subclass.class_eval do
+      watch(observable_model.to_s.tableize.to_sym, :on => :create_and_destroy) do |message|
+        message.observer_action= message.sql_action
+        message.observer_select_statement = observable_model.where(:id => message.query['id']).to_sql
+      end
+
+      watch(observable_model.to_s.tableize.to_sym) do |message|
+        if message.updated_any_of_these?(self.observed_fields)
+          message.observer_action= message.sql_action
+          message.observer_select_statement = observable_model.where(:id => message.query['id']).to_sql
+        end
+      end
+    end
+  end 
   protected
   
   def self.has_observable_hooks_for?(on, table_name)
