@@ -27,11 +27,7 @@ describe ReportingObserver do
       end      
     end
     
-    after :each do
-      class Object
-        remove_const :UserObserver
-      end
-    end
+    after { Object.class_eval { remove_const :UserObserver } }
 
     context "ignore message" do
       it "should return false" do
