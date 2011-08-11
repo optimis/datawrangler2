@@ -103,6 +103,18 @@ module Transformer
           subject.find.first['updated_at'].to_i.should == @updated_time.to_i
         end
       end
+
+      context 'delete message' do
+        it 'should be delete the document from mongo' do
+          message = {'sql' => {'query' => {'id' => 1}}, 'observer' => { 'sql' => 'SELECT `users`.id FROM `users` where `id` = 1', 'action' => 'DELETE' }}
+          DataWrangler2.mongo_db['users'].insert({:first_name => 'Jane', :last_name => 'Lin', :mysql_id => 1})
+          DataWrangler2.mongo_db.collection('users').find.count.should == 1
+
+          MockReportingClass.process_message(message)
+
+          DataWrangler2.mongo_db['users'].find.count.should == 0
+        end
+      end
     end
 
     describe '#try_method_chain' do

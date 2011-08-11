@@ -41,10 +41,10 @@ module Transformer
     end
 
     def self.process_message(message)
-      ids = model_class.find_by_sql(message['observer']['sql']).collect(&:id)   
+      if message['observer']['action'] == 'INSERT' || message['observer']['action'] == 'UPDATE'
+        ids = model_class.find_by_sql(message['observer']['sql']).collect(&:id)   
+       end
      
-     
-
       case message['observer']['action']
       when 'INSERT'
         ids.each do |id|
@@ -56,7 +56,10 @@ module Transformer
           transformer = self.new(model_class.find(id))
           collection.update({:mysql_id => id}, transformer.attributes)
         end
+      when 'DELETE'
+        collection.remove({:mysql_id => message['sql']['query']['id']})
       end
+
     end
     protected
     
