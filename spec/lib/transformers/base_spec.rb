@@ -40,7 +40,7 @@ module Transformer
 
       after { ::Transformer.class_eval { remove_const :MockReportingClass } }
       
-      context 'insert field' do
+      context 'insert message' do
         before :each do
           message = {'observer' => { 'sql' => 'SELECT `users`.id FROM `users` where `id` = 1', 'action' => 'INSERT' }}
           DataWrangler2.mongo_db.collection('users').find.count.should == 0
@@ -71,6 +71,35 @@ module Transformer
         end
 
         it 'should insert the updated_at timestamp' do
+          subject.find.first['updated_at'].to_i.should == @updated_time.to_i
+        end
+      end
+
+      context 'update message' do
+        before :each do
+          message = {'observer' => { 'sql' => 'SELECT `users`.id FROM `users` where `id` = 1', 'action' => 'UPDATE' }}
+          DataWrangler2.mongo_db['users'].insert({:first_name => 'Jane', :last_name => 'Lin', :mysql_id => 1})
+          DataWrangler2.mongo_db.collection('users').find.count.should == 1
+
+          @updated_time = Time.now
+          model = User.new(:first_name => 'John', :last_name => "Doe", :updated_at => @updated_time)
+          model.id = 1
+
+          User.stub!(:find_by_sql).and_return([model])
+          User.stub!(:find).and_return(model)
+
+          MockReportingClass.process_message(message)
+        end
+
+        subject { DataWrangler2.mongo_db['users']}
+
+        it 'should update the record in mongo' do
+          subject.find.count.should == 1
+        end
+
+        it 'should update the fields in the row' do
+          subject.find.first['first_name'].should == 'John'
+          subject.find.first['last_name'].should == 'Doe'
           subject.find.first['updated_at'].to_i.should == @updated_time.to_i
         end
       end

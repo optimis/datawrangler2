@@ -42,11 +42,20 @@ module Transformer
 
     def self.process_message(message)
       ids = model_class.find_by_sql(message['observer']['sql']).collect(&:id)   
-      
+     
+     
 
-      ids.each do |id|
-        transformer = self.new(model_class.find(id))
-        collection.insert(transformer.attributes)
+      case message['observer']['action']
+      when 'INSERT'
+        ids.each do |id|
+          transformer = self.new(model_class.find(id))
+          collection.insert(transformer.attributes)
+        end
+      when 'UPDATE'
+        ids.each do |id|
+          transformer = self.new(model_class.find(id))
+          collection.update({:mysql_id => id}, transformer.attributes)
+        end
       end
     end
     protected
