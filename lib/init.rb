@@ -12,6 +12,8 @@ Dir['config/*.rb'].each { |file_name|  require file_name }
 
 Dir['lib/models/*.rb'].each {|name| require name }
 
+Dir['lib/controllers/*.rb'].each {|name| require name }
+
 Dir['lib/observers/*.rb'].each {|name| require name }
 
 Dir['lib/transformers/*.rb'].each {|name| require name }

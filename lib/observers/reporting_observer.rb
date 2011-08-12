@@ -22,7 +22,6 @@ class ReportingObserver
     # message['observer']['sql'] = sql_select
     message.observer_class = observable_model.to_s
     
-    
     return message.to_h
   end
   
