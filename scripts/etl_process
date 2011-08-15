@@ -1,0 +1,24 @@
+#!/usr/bin/env ruby
+
+$:.unshift File.expand_path(File.dirname(__FILE__) + '/../lib')
+$:.unshift File.expand_path(File.dirname(__FILE__) + '/../')
+
+require 'rubygems'
+require 'bundler'
+require 'bundler/setup'
+
+Bundler.setup
+Bundler.require(:default)
+
+@dir = File.expand_path(File.dirname(__FILE__))
+
+Daemons.run_proc('etl_process', {:dir => 'log', :dir_mode => :normal, :backtrace => true, :log_output => true}) do
+  FileUtils.cd "#{@dir}/../"
+  require 'init'
+
+  AMQP.start("amqp://localhost:5672") do |connection|
+    ObserverController.new(connection, UserObserver)
+    TransformerController.new(connection, UserTransformer)
+  end
+
+end

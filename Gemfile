@@ -8,5 +8,8 @@ gem 'bson',              '1.3.1'
 gem 'bson_ext',          '1.3.1'
 
 gem 'amqp',  '0.8.0.rc14'
+gem 'bunny'
+
+gem 'daemons'
 
 gem 'rspec'

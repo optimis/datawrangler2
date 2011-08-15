@@ -2,8 +2,7 @@ class TransformerController
   def initialize(connection, transformer)
     channel = AMQP::Channel.new(connection)
 
-    receiving_queue = channel.queue('etl.statements', :durable => true)
-    sending_queue = channel.queue('etl.transform', :durable => true)
+    receiving_queue = channel.queue('etl.transform', :durable => true)
 
     receiving_queue.subscribe(:ack => true, &method(:receive_message))
 
@@ -12,11 +11,11 @@ class TransformerController
   end
 
   def receive_message(payload)
-    begin
+    #begin
       @transformer.process_message(BSON.deserialize(payload))
-    rescue
-      puts BSON.deserialize(payload).inspect
-    end
+    #rescue
+    #  puts BSON.deserialize(payload).inspect
+    #end
 
   end
 end
