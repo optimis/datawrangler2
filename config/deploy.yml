@@ -1,0 +1,15 @@
+data-wrangler2 :
+    chicago:
+      domain: devel@192.168.110.191
+      repository: git@github.com:optimis/datawrangler2.git
+      branch: develop
+      deploy_to: /var/www/data-wrangler2
+      config_repository: git@github.com:optimis/wd-config.git
+      config_target: chicago
+      config_branch: master
+      deploy_config_to: /var/www/data-wrangler2-config
+      post_deploy_script: scripts/post_deploy
+      post_setup_script: scripts/post_deploy
+      project: data-wrangler2
+      rake_env:
+        RACK_ENV: staging
