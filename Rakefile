@@ -24,3 +24,15 @@ task :queue_statements do
   b.stop
 
 end
+
+namepsace :deploy do
+  task :post_setup => [:after_deploy] do
+  end
+  task :post_deploy => [:after_deploy] do
+  end
+  
+  task :after_deploy do
+    puts `RACK_ENV=#{ENV['RACK_ENV']} && ./script/etl_process stop`
+    puts `RACK_ENV=#{ENV['RACK_ENV']} && ./script/etl_process start`
+  end
+end
