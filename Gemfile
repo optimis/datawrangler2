@@ -1,3 +1,6 @@
+source :rubygems
+
+
 gem 'activerecord'
 gem 'mysql2'
 gem 'hoptoad_notifier'
