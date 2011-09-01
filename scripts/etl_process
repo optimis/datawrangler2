@@ -16,7 +16,7 @@ Daemons.run_proc('etl_process', {:dir => 'log', :dir_mode => :normal, :backtrace
   FileUtils.cd "#{@dir}/../"
   require 'init'
 
-  AMQP.start("amqp://localhost:5672") do |connection|
+  AMQP.start("amqp://#{DataWrangler2::Config.rabbit}") do |connection|
     ObserverController.new(connection, UserObserver)
     TransformerController.new(connection, UserTransformer)
   end

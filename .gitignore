@@ -1,4 +1,5 @@
 *.swp
 config/database.rb
 config/mongo.rb
+config/rabbit.rb
 log/*
