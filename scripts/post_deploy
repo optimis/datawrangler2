@@ -1,8 +1,9 @@
 #!/bin/sh
 
+mkdir log
+
 
 # We need to run this in a shell script to run before rake because when the
 # environment is out of date, we can't even run rake.
 bundle install --deployment
 
-mkdir log
