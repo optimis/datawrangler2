@@ -7,7 +7,7 @@ require 'lib/init'
 
 desc "read new binlog statements and queue"
 task :queue_statements do
-  b = Bunny.new(:logging => true)
+  b = Bunny.new("amqp://#{DataWrangler2::Config.rabbit}", :logging => true)
 
   b.start
 
