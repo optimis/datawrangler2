@@ -55,7 +55,6 @@ module Transformer
             puts $!.message
             puts $!.backtrace.join("\n")
             puts model_class.find(id).inspect
-           end
           end
         end
       when 'UPDATE'
