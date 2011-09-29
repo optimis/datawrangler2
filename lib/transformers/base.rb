@@ -43,18 +43,31 @@ module Transformer
     def self.process_message(message)
       if message['observer']['action'] == 'INSERT' || message['observer']['action'] == 'UPDATE'
         ids = model_class.find_by_sql(message['observer']['sql']).collect(&:id)   
-       end
+      end
      
       case message['observer']['action']
       when 'INSERT'
         ids.each do |id|
-          transformer = self.new(model_class.find(id))
-          collection.insert(transformer.attributes)
+          begin
+            transformer = self.new(model_class.find(id))
+            collection.insert(transformer.attributes)
+          rescue
+            puts $!.message
+            puts $!.backtrace.join("\n")
+            puts model_class.find(id).inspect
+           end
+          end
         end
       when 'UPDATE'
         ids.each do |id|
-          transformer = self.new(model_class.find(id))
-          collection.update({:mysql_id => id}, transformer.attributes)
+          begin
+            transformer = self.new(model_class.find(id))
+            collection.update({:mysql_id => id}, transformer.attributes)
+          rescue
+            puts $!.message
+            puts $!.backtrace.join("\n")
+            puts model_class.find(id).inspect
+           end
         end
       when 'DELETE'
         collection.remove({:mysql_id => message['sql']['query']['id']})
