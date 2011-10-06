@@ -1,5 +1,6 @@
 source :rubygems
 
+gem 'mongo-logger', :path => '~/projects/mongo-logger'
 
 gem 'activerecord'
 gem 'mysql2'

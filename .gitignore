@@ -1,4 +1,5 @@
 *.swp
+config/mongologger_config.rb
 config/database.rb
 config/mongo.rb
 config/rabbit.rb

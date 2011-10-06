@@ -25,4 +25,8 @@ module DataWrangler2
   def self.mongo_db
     @mongo_db ||= Mongo::Connection.new(*DataWrangler2::Config.mongo[:connection]).db(DataWrangler2::Config.mongo[:database])
   end
+
+  def self.logger
+    @logger ||= MongoLogger::Logger.new
+  end
 end
