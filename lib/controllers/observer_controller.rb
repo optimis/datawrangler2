@@ -11,7 +11,7 @@ class ObserverController
     @observer = observer
   end
 
-  def receive_message(payload)
+  def receive_message(metadata, payload)
     log_messages = ['starting to observer message']
     log_attributes = {:start_time => Time.now, :application => 'datawrangler2-observer', :error => false}
 
