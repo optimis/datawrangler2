@@ -1,5 +1,6 @@
-PATH
-  remote: ~/projects/mongo-logger
+GIT
+  remote: git@github.com:optimis/mongo-logger.git
+  revision: 652a43ffd8c3a933597b245d7e57dcf3417d87bb
   specs:
     mongo-logger (0.0.1)
       SystemTimer
