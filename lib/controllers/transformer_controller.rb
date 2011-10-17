@@ -11,22 +11,22 @@ class TransformerController
   end
 
   def receive_message(payload)
-    log_messages = ['starting to observer message']
-    log_attributes = {:start_time => Time.now, :application => 'datawrangler2-observer', :error => false}
+    log_messages = ['starting to transform message']
+    log_attributes = {:start_time => Time.now, :application => 'datawrangler2-transformer', :error => false}
+    log_attributes[:message] = BSON.deserialize(payload)
 
     begin
       @transformer.process_message(BSON.deserialize(payload))
+      log_messages << 'finished transforming and saving the message'
     rescue
-      log_messages << 'message observeration failed'
+      log_messages << 'message transformation failed'
 
-      log_attributes[:message] = BSON.deserialize(payload)
-      log_attributes[:end_time] = Time.now
       log_attributes[:error] = true
-      DataWrangler2.logger.info log_messages, log_attributes
+      log_attributes[:error_message] = $!.message
+      log_attributes[:traceback] = $!.backtrace.join("\n")
     end
 
 
-    log_messages << 'finished transforming and saving the message'
     log_attributes[:end_time] = Time.now
     
     DataWrangler2.logger.info log_messages, log_attributes
