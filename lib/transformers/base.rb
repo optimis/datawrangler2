@@ -30,10 +30,25 @@ module Transformer
     end
 
     def attributes
-      self.class.field_names.inject({}) do |fields, field_name| 
+      errors = []
+      fields = {}
+      self.class.field_names.each do |field_name| 
+        begin
         fields[field_name] = send field_name
         fields
+        rescue
+          errors << {
+            'field_name' => field_name.to_s,
+            'error_message' => $!.message,
+            'traceback' => $!.backtrace.join("\n")
+            }
+        end
       end
+
+      raise FieldErrors.new(errors) unless errors.empty?
+
+
+      fields
     end
 
     def self.collection
@@ -41,6 +56,8 @@ module Transformer
     end
 
     def self.process_message(message)
+      log_attributes = {:application => 'datawrangler2-transformer', :error => true}
+      
       if message['observer']['action'] == 'INSERT' || message['observer']['action'] == 'UPDATE'
         ids = model_class.find_by_sql(message['observer']['sql']).collect(&:id)   
       end
@@ -48,25 +65,41 @@ module Transformer
       case message['observer']['action']
       when 'INSERT'
         ids.each do |id|
+          log_attributes[:mysql_id] = id
+          log_attributes[:active_record_class] = model_class.to_s 
+
           begin
             transformer = self.new(model_class.find(id))
             collection.insert(transformer.attributes)
+          rescue FeildErrors
+            log_attributes[:field_errors] = $!.data
+            
+            DataWrangler2.logger.error ['Failed to insert data'], log_attributes
           rescue
-            puts $!.message
-            puts $!.backtrace.join("\n")
-            puts model_class.find(id).inspect
+            log_attributes[:error_message] = $!.message
+            log_attributes[:traceback] = $!.backtrace.join("\n")
+
+            DataWrangler2.logger.error ['Failed to insert data'], log_attributes
           end
         end
       when 'UPDATE'
         ids.each do |id|
+          log_attributes[:mysql_id] = id
+          log_attributes[:active_record_class] = model_class.to_s 
+
           begin
             transformer = self.new(model_class.find(id))
             collection.update({:mysql_id => id}, transformer.attributes)
+          rescue FeildErrors
+            log_attributes[:field_errors] = $!.data
+            
+            DataWrangler2.logger.error ['Failed to update data'], log_attributes
           rescue
-            puts $!.message
-            puts $!.backtrace.join("\n")
-            puts model_class.find(id).inspect
-           end
+            log_attributes[:error_message] = $!.message
+            log_attributes[:traceback] = $!.backtrace.join("\n")
+
+            DataWrangler2.logger.error ['Failed to update data'], log_attributes
+          end
         end
       when 'DELETE'
         collection.remove({:mysql_id => message['sql']['query']['id']})
@@ -120,11 +153,6 @@ module Transformer
           model_object.send(name) || default_value
         end
       end
-      
-    rescue => e
-      HoptoadNotifier.notify(:error_class => "Presenters::Reporting::#{model_class}",
-                             :error_message => "field #{name} error for ID: #{model_object.id}: #{e}")
-      return default_value
     end
     
     # Insert try method call between every method call in the chain
@@ -149,5 +177,12 @@ module Transformer
       end || default_value_for_nil
     end
     
+  end
+end
+
+class FieldErrors < StandardError
+  attr_reader :data
+  def initialize(data)
+    @data = data
   end
 end

@@ -14,17 +14,29 @@ module Transformer
 
     describe '#attributes' do
       after { ::Transformer.class_eval { remove_const :MockReportingClass } }
-      
-      it 'should return a hash of with each field as a key' do
+      before do
         class MockReportingClass < Base
           field :clinic_id
           field :practice_name
         end
 
-        model = mock("User", :clinic_id => 5, :practice_name => 'Test Practice', :id => 5, :updated_at => "time")
+        @model = mock("User", :clinic_id => 5, :practice_name => 'Test Practice', :id => 5, :updated_at => "time")
+      end
+      
+      it 'should return a hash of with each field as a key' do
+        MockReportingClass.new(@model).attributes.should == {:clinic_id => 5, :practice_name => 'Test Practice', :mysql_id => 5, :updated_at => 'time'}
+      end
 
-        MockReportingClass.new(model).attributes.should == {:clinic_id => 5, :practice_name => 'Test Practice', :mysql_id => 5, :updated_at => 'time'}
-
+      it 'should collect all exceptions that happened when trying to access individual fields' do
+        error = StandardError.new('got a problem')
+        error.stub!(:backtrace).and_return(['line 1', 'line 2'])
+        @model.stub!(:practice_name).and_raise(error)
+        
+        lambda { MockReportingClass.new(@model).attributes }.should raise_error(FieldErrors) { |error| 
+          error.data.first['field_name'].should == 'practice_name'
+          error.data.first['error_message'].should == 'got a problem'
+          error.data.first['traceback'].should == "line 1\nline 2"
+        }
       end
     end
 
@@ -193,6 +205,16 @@ module Transformer
           
           MockReportingClass.field_names.should == [:mysql_id, :updated_at, :clinic_id, :practice_name]
 
+        end
+
+        it 'should raise an error if there is one' do
+          MockReportingClass.class_eval do
+            field :clinic_id do
+              raise "error happened"
+            end
+          end
+          
+          lambda { MockReportingClass.new('').clinic_id }.should raise_error
         end
       end
       
