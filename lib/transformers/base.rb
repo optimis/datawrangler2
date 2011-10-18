@@ -71,7 +71,7 @@ module Transformer
           begin
             transformer = self.new(model_class.find(id))
             collection.insert(transformer.attributes)
-          rescue FeildErrors
+          rescue FieldErrors
             log_attributes[:field_errors] = $!.data
             
             DataWrangler2.logger.error ['Failed to insert data'], log_attributes
@@ -90,7 +90,7 @@ module Transformer
           begin
             transformer = self.new(model_class.find(id))
             collection.update({:mysql_id => id}, transformer.attributes)
-          rescue FeildErrors
+          rescue FieldErrors
             log_attributes[:field_errors] = $!.data
             
             DataWrangler2.logger.error ['Failed to update data'], log_attributes
